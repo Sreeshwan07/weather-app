@@ -19,3 +19,7 @@ A modern, responsive weather application that provides real-time weather informa
 📱 Fully responsive design for desktop and mobile
 
 ⚠️ Graceful error handling for invalid inputs or network issues
+
+
+<img width="1288" height="574" alt="Screenshot 2025-12-26 134028" src="https://github.com/user-attachments/assets/1ee13917-0185-42c3-b82d-dfb42a153b61" />
+<img width="678" height="606" alt="Screenshot 2025-12-26 134101" src="https://github.com/user-attachments/assets/083e263c-a218-4dfb-a3a8-d06bf8574234" />
