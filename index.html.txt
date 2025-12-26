@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Advanced Weather App</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+/* ---------- Default Theme ---------- */
+:root {
+    --card: #ffffff;
+    --text: #222;
+    --accent: #2a5298;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Poppins', sans-serif;
+    transition: background 0.6s ease;
+}
+
+/* ---------- Weather Backgrounds ---------- */
+.clear {
+    background: linear-gradient(135deg, #56ccf2, #2f80ed);
+}
+
+.clouds {
+    background: linear-gradient(135deg, #bdc3c7, #2c3e50);
+}
+
+.rain {
+    background: linear-gradient(135deg, #373b44, #4286f4);
+}
+
+.snow {
+    background: linear-gradient(135deg, #e6dada, #274046);
+}
+
+.thunder {
+    background: linear-gradient(135deg, #141e30, #243b55);
+}
+
+.mist {
+    background: linear-gradient(135deg, #606c88, #3f4c6b);
+}
+
+/* ---------- Card ---------- */
+.weather-app {
+    background: var(--card);
+    width: 380px;
+    padding: 25px;
+    border-radius: 18px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+    color: var(--text);
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {opacity: 0; transform: translateY(10px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.badge {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 20px;
+    background: rgba(0,0,0,0.1);
+}
+
+/* ---------- Buttons ---------- */
+button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: var(--accent);
+    color: white;
+    font-size: 14px;
+}
+
+button.secondary {
+    background: rgba(0,0,0,0.15);
+    color: var(--text);
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+/* ---------- Search ---------- */
+.search-box {
+    display: flex;
+    gap: 8px;
+    margin: 15px 0;
+}
+
+.search-box input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    outline: none;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+/* ---------- Weather Info ---------- */
+.weather-info {
+    display: none;
+    text-align: center;
+}
+
+.weather-info img {
+    width: 90px;
+}
+
+.temp {
+    font-size: 40px;
+    font-weight: 600;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.card {
+    background: rgba(0,0,0,0.08);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 13px;
+}
+
+.small {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.error {
+    color: #e63946;
+    font-size: 14px;
+    margin-top: 8px;
+}
+</style>
+</head>
+
+<body class="clear">
+
+<div class="weather-app">
+    <div class="top-bar">
+        <h3>Weather</h3>
+        <span class="badge" id="badge">--</span>
+    </div>
+
+    <div class="search-box">
+        <input id="cityInput" placeholder="Enter city" onkeypress="handleEnter(event)">
+        <button onclick="getWeather()">Search</button>
+    </div>
+
+    <div class="actions">
+        <button class="secondary" onclick="getLocationWeather()">📍 Location</button>
+        <button class="secondary" onclick="toggleUnit()">🌡 °C / °F</button>
+    </div>
+
+    <div class="weather-info" id="weatherInfo">
+        <h3 id="location"></h3>
+        <p class="small" id="updated"></p>
+
+        <img id="icon">
+        <div class="temp" id="temperature"></div>
+        <p id="condition"></p>
+
+        <div class="grid">
+            <div class="card">Feels Like: <span id="feels"></span></div>
+            <div class="card">Humidity: <span id="humidity"></span></div>
+            <div class="card">Wind: <span id="wind"></span></div>
+            <div class="card">AQI (PM2.5): <span id="aqi"></span></div>
+        </div>
+    </div>
+
+    <p class="error" id="error"></p>
+</div>
+
+<script>
+const apiKey = "c29b2ea03ce747eebb670436252612";
+let isCelsius = true;
+let currentData = null;
+
+const el = id => document.getElementById(id);
+
+/* ---------- Fetch Weather ---------- */
+async function fetchWeather(query) {
+    el("error").innerText = "";
+    el("weatherInfo").style.display = "none";
+
+    try {
+        const res = await fetch(
+            `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${query}&aqi=yes`
+        );
+        if (!res.ok) throw new Error("Invalid city");
+
+        const data = await res.json();
+        currentData = data;
+        updateUI(data);
+    } catch {
+        el("error").innerText = "Unable to fetch weather data";
+    }
+}
+
+/* ---------- Update UI ---------- */
+function updateUI(data) {
+    setWeatherBackground(data.current.condition.text);
+
+    el("weatherInfo").style.display = "block";
+    el("location").innerText = `${data.location.name}, ${data.location.country}`;
+    el("updated").innerText = `Updated: ${data.current.last_updated}`;
+    el("icon").src = "https:" + data.current.condition.icon;
+    el("condition").innerText = data.current.condition.text;
+    el("badge").innerText = data.current.condition.text.split(" ")[0];
+
+    updateTemperature(data);
+
+    el("feels").innerText =
+        `${isCelsius ? data.current.feelslike_c : data.current.feelslike_f}°`;
+    el("humidity").innerText = `${data.current.humidity}%`;
+    el("wind").innerText = `${data.current.wind_kph} km/h`;
+    el("aqi").innerText = data.current.air_quality?.pm2_5?.toFixed(1) || "--";
+}
+
+/* ---------- Temperature ---------- */
+function updateTemperature(data) {
+    el("temperature").innerText =
+        isCelsius ? `${data.current.temp_c}°C` : `${data.current.temp_f}°F`;
+}
+
+/* ---------- Weather Background ---------- */
+function setWeatherBackground(condition) {
+    document.body.className = "";
+
+    const text = condition.toLowerCase();
+
+    if (text.includes("clear") || text.includes("sun")) document.body.classList.add("clear");
+    else if (text.includes("cloud")) document.body.classList.add("clouds");
+    else if (text.includes("rain") || text.includes("drizzle")) document.body.classList.add("rain");
+    else if (text.includes("snow")) document.body.classList.add("snow");
+    else if (text.includes("thunder")) document.body.classList.add("thunder");
+    else if (text.includes("mist") || text.includes("fog")) document.body.classList.add("mist");
+    else document.body.classList.add("clear");
+}
+
+/* ---------- Actions ---------- */
+function getWeather() {
+    const city = el("cityInput").value.trim();
+    if (!city) return el("error").innerText = "Please enter a city name";
+    fetchWeather(city);
+}
+
+function getLocationWeather() {
+    navigator.geolocation.getCurrentPosition(
+        pos => fetchWeather(`${pos.coords.latitude},${pos.coords.longitude}`),
+        () => el("error").innerText = "Location access denied"
+    );
+}
+
+function toggleUnit() {
+    isCelsius = !isCelsius;
+    if (currentData) updateTemperature(currentData);
+}
+
+function handleEnter(e) {
+    if (e.key === "Enter") getWeather();
+}
+</script>
+
+</body>
+</html>
